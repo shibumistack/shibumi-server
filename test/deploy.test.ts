@@ -91,7 +91,7 @@ describe("deployment pipeline", () => {
       ["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "run", "--rm", "web", "bun", "test"],
     ]);
     expect(calls[7]).toEqual(["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "ps", "--quiet", "web"]);
-    expect(calls[10]).toEqual(["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "up", "-d", "--remove-orphans", "--force-recreate"]);
+    expect(calls[10]).toEqual(["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "up", "-d", "--remove-orphans", "--force-recreate", "app"]);
     expect(calls[11]).toEqual(["podman", "image", "list", "--filter", "reference=localhost/shibumi-server/myapp:*", "--format", "{{.Tag}}"]);
     expect(calls[12]?.slice(0, 4)).toEqual(["podman", "image", "tag", "sha256:image-id"]);
     expect(calls[12]?.[4]).toMatch(/^localhost\/shibumi-server\/myapp:rollback-\d{13}-b{12}$/);

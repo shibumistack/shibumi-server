@@ -662,7 +662,9 @@ export async function deploy(
       dependencies,
       "start",
       composeExecutable,
-      [...compose, "up", "-d", ...(app.deploymentMode === "prebuilt" ? ["--no-build"] : []), "--remove-orphans", "--force-recreate"],
+      // Scoped to the app service: sibling services such as a database or IRC server keep running across
+      // deploys. Compose still starts stopped dependencies; it only recreates the named service.
+      [...compose, "up", "-d", ...(app.deploymentMode === "prebuilt" ? ["--no-build"] : []), "--remove-orphans", "--force-recreate", app.service],
       options,
     );
     await dependencies.onStage?.("health");

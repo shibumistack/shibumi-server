@@ -146,7 +146,7 @@ describe("webhook server", () => {
 
     expect(replay.status).toBe(200);
     expect(await replay.json()).toEqual({ status: "duplicate", app: "myapp", delivery });
-    expect(runner.calls).toBe(14);
+    expect(runner.calls).toBe(15);
   });
 
   test("allows a failed delivery to be retried", async () => {

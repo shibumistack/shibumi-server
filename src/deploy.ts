@@ -447,7 +447,7 @@ async function restoreRelease(
       dependencies,
       "restore",
       composeExecutable,
-      [...compose, "up", "-d", "--no-build", "--force-recreate", app.service],
+      [...compose, "up", "-d", "--no-build", "--force-recreate", "--no-deps", app.service],
       { ...options, input: composeOverride(app.service, release.imageName, release.metadata, appEnv) },
     );
     await waitForHealth(app, dependencies);
@@ -570,7 +570,7 @@ export async function rollbackToPreviousImage(
       dependencies,
       "rollback",
       composeExecutable,
-      [...compose, "up", "-d", "--no-build", "--force-recreate", app.service],
+      [...compose, "up", "-d", "--no-build", "--force-recreate", "--no-deps", app.service],
       options,
     );
     await dependencies.onStage?.("health");
@@ -658,15 +658,12 @@ export async function deploy(
   }
   const replacementStartedAt = Date.now();
   try {
-    await runChecked(
-      dependencies,
-      "start",
-      composeExecutable,
-      // Scoped to the app service: sibling services such as a database or IRC server keep running across
-      // deploys. Compose still starts stopped dependencies; it only recreates the named service.
-      [...compose, "up", "-d", ...(app.deploymentMode === "prebuilt" ? ["--no-build"] : []), "--remove-orphans", "--force-recreate", app.service],
-      options,
-    );
+    // Two steps so sibling services (a database, an IRC server) survive deploys. The first `up` creates
+    // anything missing and only recreates services whose config changed. The second forces the app
+    // container alone; podman-compose applies --force-recreate to dependencies unless --no-deps is set.
+    const noBuild = app.deploymentMode === "prebuilt" ? ["--no-build"] : [];
+    await runChecked(dependencies, "start", composeExecutable, [...compose, "up", "-d", ...noBuild, "--remove-orphans"], options);
+    await runChecked(dependencies, "start", composeExecutable, [...compose, "up", "-d", ...noBuild, "--force-recreate", "--no-deps", app.service], options);
     await dependencies.onStage?.("health");
     await waitForHealth(app, dependencies);
     await dependencies.onOutput?.("health", retryBudgetSummary("Replacement healthy", Date.now() - replacementStartedAt));

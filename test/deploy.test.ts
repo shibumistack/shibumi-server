@@ -91,12 +91,13 @@ describe("deployment pipeline", () => {
       ["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "run", "--rm", "web", "bun", "test"],
     ]);
     expect(calls[7]).toEqual(["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "ps", "--quiet", "web"]);
-    expect(calls[10]).toEqual(["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "up", "-d", "--remove-orphans", "--force-recreate", "web"]);
-    expect(calls[11]).toEqual(["podman", "image", "list", "--filter", "reference=localhost/shibumi-server/myapp:*", "--format", "{{.Tag}}"]);
-    expect(calls[12]?.slice(0, 4)).toEqual(["podman", "image", "tag", "sha256:image-id"]);
-    expect(calls[12]?.[4]).toMatch(/^localhost\/shibumi-server\/myapp:rollback-\d{13}-b{12}$/);
-    expect(calls[13]).toEqual(["podman", "image", "list", "--filter", "reference=localhost/shibumi-server/upload/myapp:*", "--format", "{{.Tag}}"]);
-    expect(calls[14]).toEqual(["podman", "image", "prune", "--force"]);
+    expect(calls[10]).toEqual(["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "up", "-d", "--remove-orphans"]);
+    expect(calls[11]).toEqual(["podman", "compose", "--project-name", "myapp", "--file", `${app.checkout}/compose.yaml`, "--file", "-", "up", "-d", "--force-recreate", "--no-deps", "web"]);
+    expect(calls[12]).toEqual(["podman", "image", "list", "--filter", "reference=localhost/shibumi-server/myapp:*", "--format", "{{.Tag}}"]);
+    expect(calls[13]?.slice(0, 4)).toEqual(["podman", "image", "tag", "sha256:image-id"]);
+    expect(calls[13]?.[4]).toMatch(/^localhost\/shibumi-server\/myapp:rollback-\d{13}-b{12}$/);
+    expect(calls[14]).toEqual(["podman", "image", "list", "--filter", "reference=localhost/shibumi-server/upload/myapp:*", "--format", "{{.Tag}}"]);
+    expect(calls[15]).toEqual(["podman", "image", "prune", "--force"]);
     const start = runner.calls.find(({ args }) => args.includes("up"));
     expect(start?.options?.env).toEqual({ SHIBUMI_PORT: "9100" });
     expect(start?.options?.input).toContain(`SHIBUMI_COMMIT: ${JSON.stringify(commit)}`);

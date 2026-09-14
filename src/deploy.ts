@@ -658,11 +658,12 @@ export async function deploy(
   }
   const replacementStartedAt = Date.now();
   try {
-    // Two steps so sibling services (a database, an IRC server) survive deploys. The first `up` creates
-    // anything missing and only recreates services whose config changed. The second forces the app
-    // container alone; podman-compose applies --force-recreate to dependencies unless --no-deps is set.
+    // Two steps so sibling services (a database, an IRC server) survive deploys. podman-compose does not
+    // diff config: a plain `up` recreates every existing container, so the first pass is --no-recreate
+    // (create what is missing, touch nothing that runs). The second forces the app container alone;
+    // --no-deps keeps --force-recreate from reaching its dependencies.
     const noBuild = app.deploymentMode === "prebuilt" ? ["--no-build"] : [];
-    await runChecked(dependencies, "start", composeExecutable, [...compose, "up", "-d", ...noBuild, "--remove-orphans"], options);
+    await runChecked(dependencies, "start", composeExecutable, [...compose, "up", "-d", ...noBuild, "--no-recreate", "--remove-orphans"], options);
     await runChecked(dependencies, "start", composeExecutable, [...compose, "up", "-d", ...noBuild, "--force-recreate", "--no-deps", app.service], options);
     await dependencies.onStage?.("health");
     await waitForHealth(app, dependencies);

@@ -2,7 +2,7 @@
 
 Deploy apps to a Linux VPS with rootless Podman, Caddy, and systemd.
 
-> Experimental. Version `0.10.6` is in dogfood use.
+> Experimental. Version `0.11.7`; verify new releases against a disposable app before updating a production server.
 
 The command is `shis`. `shibumi-server` still works. Terminal output uses Clack with persimmon branding, and plain text when color is unavailable.
 
@@ -109,7 +109,7 @@ Use `--dry-run` to follow the same path without writing config or secrets, runni
 For unattended setup, pin the release and provide every app value:
 
 ```bash
-bunx shibumi-server@0.10.6 init
+bunx --bun shibumi-server@0.11.7 init
 shis add example.com \
   --repository github:owner/repository \
   --checkout /srv/shibumi/apps/example-com \
@@ -117,7 +117,7 @@ shis add example.com \
   --deployment-mode prebuilt
 ```
 
-`init` stores the release under `~/.local/share/shibumi-server/releases/0.10.6`, updates the `current` link and launcher, and prepares config, secrets, and systemd. Re-running it keeps machine config and secrets. Prebuilt mode accepts only the exact commit-tagged Linux image loaded through `shis image-load`. Add app tests after `--`, such as `-- bun test`.
+`init` stores the release under `~/.local/share/shibumi-server/releases/0.11.7`, updates the `current` link and launcher, and prepares config, secrets, and systemd. Re-running it keeps machine config and secrets. Prebuilt mode accepts only the exact commit-tagged Linux image loaded through `shis image-load`. Add app tests after `--`, such as `-- bun test`.
 
 List or remove apps:
 
@@ -181,6 +181,23 @@ Rollback restores the previous image kept for up to 12 hours, starts it without 
 `shis` checks npm for newer stable releases and suggests `shis update` when one exists. Registry failures never block local work. `update` installs the exact stable version, keeps config and secrets, updates the local release link, and reloads the service.
 
 Hosts with the standalone Compose frontend can pass `--compose-command podman-compose`. Optional flags set branch, Compose file, service, and health path. Run `shis --help` for full syntax.
+
+## Development
+
+Use Bun 1.4.4 or newer for development and release checks. `bun check` uses Bun's native checker; no standalone TypeScript compiler dependency is needed. This development-tool change does not raise the server runtime engine floor.
+
+```sh
+bun install --frozen-lockfile
+bun test
+bun check
+bun run pack:check
+```
+
+The real Podman integration test is opt-in and uses disposable fixtures:
+
+```sh
+SHIBUMI_INTEGRATION=1 SHIBUMI_COMPOSE_COMMAND=podman-compose bun test test/integration.test.ts
+```
 
 ## License
 

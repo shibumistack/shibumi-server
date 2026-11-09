@@ -1,6 +1,6 @@
 {
   "name": "shibumi-server",
-  "version": "0.11.5",
+  "version": "0.11.7",
   "description": "Deploy apps to a Linux VPS with rootless Podman.",
   "license": "MIT",
   "type": "module",
@@ -13,9 +13,9 @@
     "dev": "bun scripts/ship.ts --dev",
     "start": "bun src/cli.ts serve",
     "test": "bun test",
-    "check": "tsc --noEmit",
+    "check": "bun check --no-script",
     "build:site": "bun scripts/build-site.ts",
-    "pack:check": "npm pack --dry-run",
+    "pack:check": "bun pm pack --dry-run",
     "preview:ui": "bun scripts/preview-ui.ts",
     "prepublishOnly": "bun test && bun run check",
     "ship": "bun scripts/ship.ts",
@@ -61,8 +61,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "latest"
+    "@types/bun": "latest"
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0"

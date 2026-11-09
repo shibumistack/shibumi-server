@@ -22,7 +22,7 @@ test("published files use an explicit allowlist", () => {
 test("website, generated apps, and integration use the default Bun image", async () => {
   const from = "FROM oven/bun:alpine";
   expect(await readFile(resolve(import.meta.dir, "../Dockerfile"), "utf8")).toStartWith(`${from} AS build\n`);
-  expect(await readFile(resolve(import.meta.dir, "integration/fixture/Containerfile"), "utf8")).toStartWith(`${from}\n`);
+  expect(await readFile(resolve(import.meta.dir, "integration/fixture/Containerfile"), "utf8")).toStartWith("FROM docker.io/oven/bun:alpine\n");
   expect(await readFile(resolve(import.meta.dir, "../scripts/ship.ts"), "utf8")).toContain(`Dockerfile: \`${from}\n`);
 });
 

@@ -9,8 +9,8 @@
 ```bash
 bun install
 bun test
-bun run check
-npm pack --dry-run
+bun check       # native checker; development requires Bun >=1.4.4
+bun pm pack --dry-run
 ```
 
 The real Podman integration test is opt-in:
@@ -26,6 +26,8 @@ Use `SHIBUMI_COMPOSE_COMMAND=podman-compose` on hosts with the standalone Compos
 The marketing site's shared design layer is vendored: `site/shibumi.css` is a copy of the canonical file in the shibumistack.dev repo (`public/shibumi.css`). Do not edit the vendored copy; edit the canonical file and run `scripts/sync-shibumi-css.sh` to re-pull. `site/styles.css` holds only site-specific rules layered after it. Typescale is 12/14/16/18/21/25 in rem, never below 12px, never off-scale values; body is sans, headings serif, mono stack leads with `ui-monospace`.
 
 ## Releases
+
+Development/release checks use Bun >=1.4.4 and native `bun check --no-script`; keep `@types/bun` but no direct `typescript` dependency. The server runtime engine floor remains unchanged. After dependency edits, regenerate `bun.lock` and copy it byte-for-byte to `runtime-lock.json` before packaging.
 
 Create and push matching `v${version}` Git tag at release commit before `npm publish`. Postpublish website sync verifies tagged `install.sh`; publishing first uploads package but leaves sync failed.
 
@@ -72,6 +74,8 @@ shibumistack.dev is the canonical source for shared artifacts; when it publishes
 - Normal unit tests must fake Git, Podman, and systemd. Real integration tests must use unique disposable projects and clean up.
 
 ## Gotchas
+
+- The real Podman integration fixture uses fully qualified `docker.io/oven/bun:alpine` so it works without host short-name aliases or registry-search config. This keeps the same floating official Bun image; do not replace it with a Docker-to-Podman alias workaround. Its logger prints deployment failures rather than hiding the cause behind a final HTTP connection error.
 
 - `scripts/dev-site.ts` needs `idleTimeout: 0`: `/__hmr` EventSource idles over Bun.serve's 10-second default and warns.
 - Dev preview does not claim port 9100 from an existing listener. Kill stale PID before starting `bun dev`.

@@ -83,7 +83,7 @@ integrationTest("deploys a signed webhook through a disposable Git checkout and 
       repository: { full_name: app.repository },
     });
     const signature = createHmac("sha256", secret).update(body).digest("hex");
-    const logger = { info() {}, error() {} };
+    const logger = { info: (...args: unknown[]) => console.info(...args), error: (...args: unknown[]) => console.error(...args) };
     const service = new WebhookService(
       {
         listen: { hostname: "127.0.0.1", port: 8787, maxBodyBytes: 1_048_576 },

@@ -4,30 +4,28 @@ Deploy apps to a Linux VPS with rootless Podman, Caddy, and systemd.
 
 > Experimental. Version `0.11.7`; verify new releases against a disposable app before updating a production server.
 
-The command is `shis`. `shibumi-server` still works. Terminal output uses Clack with persimmon branding, and plain text when color is unavailable.
+The command is `shis`; `shibumi-server` remains a compatible alias.
 
 ## How it works
 
-`bun ship` checks your committed code, builds the server image on your computer, and uploads it over SSH before pushing Git. The signed GitHub webhook tells `shibumi-server` to fetch that exact commit. The server checks repository, app, commit, Git tree, tag, and platform before replacing the container and checking its health.
+`bun ship` runs your configured checks, builds the app image with Docker on your computer, and uploads it over SSH before pushing Git. It then asks the server over SSH to deploy that exact commit. The server verifies repository, app, commit, Git tree, tag and platform before replacement, then checks the new container's health.
 
 ```text
-local build → SSH image upload → Git push → signed webhook → verify → rootless Podman → health check
+local build → SSH image upload → Git push → SSH deploy request → verify → rootless Podman → health check
 ```
 
-Server-side builds remain available with `deploymentMode: "build"`.
+Push-to-deploy is optional through `bun ship:webhook`. Server-side builds remain available with `deploymentMode: "build"`.
 
-Apps can run a test command before startup. Every app gets `SHIBUMI_COMMIT` and `SHIBUMI_DEPLOYED_AT` in its environment. After a healthy deploy, the server keeps the active image plus one rollback image, then prunes dangling image data. Caddy handles public HTTPS and retries the app upstream for 20 seconds during replacement.
+Apps can run a test command before startup. Every app gets `SHIBUMI_COMMIT` and `SHIBUMI_DEPLOYED_AT` in its environment. By default, a healthy deploy retains the active image and one rollback image. Caddy handles public HTTPS and retries the app upstream for 20 seconds during replacement. Startup or recovery can take longer, so requests may fail. Image rollback does not undo database changes.
 
 Read the [documentation](https://server.shibumistack.dev/docs). Markdown sources live in [`docs/`](docs/).
 
-## Development
+## Run from source
 
-Requires [Bun](https://bun.sh/).
+Install dependencies before checking config or starting the receiver:
 
 ```bash
 bun install
-bun test
-bun run check
 ```
 
 Validate config and secrets:
@@ -52,7 +50,7 @@ The systemd unit caps the receiver at 1.5 GiB memory, 256 MiB swap, two CPUs, an
 
 ## GitHub webhook
 
-Configure one webhook per app:
+The default `bun ship` flow does not need a webhook. If you choose push-to-deploy, use `bun ship:webhook` or configure one webhook per app:
 
 - URL: `https://example.com/hooks/github/myapp`
 - Content type: `application/json`
@@ -74,7 +72,7 @@ Start from the local project root:
 curl -fsSL https://shibumistack.dev/install/ship.sh | sh
 ```
 
-Ship connects over confirmed SSH, installs or upgrades `shibumi-server`, enables prebuilt deploys, registers the app, and configures GitHub. Local builds need Colima, Docker CLI, Docker Compose, and Buildx. If Docker config names a missing credential helper, Ship offers to remove that reference after saving a mode-`0600` backup.
+Ship connects over confirmed SSH, installs or upgrades `shibumi-server` when needed, enables prebuilt deploys, and registers the app. It uses GitHub CLI to create a repository if you choose that path; webhooks remain optional. Local builds need Docker CLI, Compose, Buildx and a running container engine. On macOS, the setup below uses Colima; on Linux, use Docker Engine. If Docker config names a missing credential helper, Ship offers to remove that reference after saving a mode-`0600` backup.
 
 Recommended macOS setup:
 

@@ -47,7 +47,7 @@
         <p class="eyebrow">Self-hosted deploys</p>
         <h1>Ship,<br><em>done.</em></h1>
         <p class="lede">Build on your computer. Run that exact image on your VPS.</p>
-        <p class="hero-note">VPS deployment only <span class="dim">(for now)</span>.</p>
+        <p class="hero-note">Run the installer on your Linux server. Build and ship from your computer.</p>
         <div class="actions">
           <div class="command-block hero-install"><code><span class="syntax-command">curl</span> <span class="syntax-option">-fsSL</span> https://server.shibumistack.dev/install | <span class="syntax-command">bash</span></code><button type="button" data-copy="curl -fsSL https://server.shibumistack.dev/install | bash" aria-label="Copy install command" title="Copy install command"><svg class="copy-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5"/></svg></button></div>
           <a class="button" href="https://github.com/shibumistack/shibumi-server"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.87c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.35 1.09 2.92.83.09-.65.35-1.09.64-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.82a9.5 9.5 0 0 1 2.5.34c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.86V21c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>Read source</a>
@@ -78,7 +78,7 @@
         <p>Connect over SSH. Caddy handles public traffic while each app listens on loopback.</p>
 
         <div class="storage-math" aria-label="Image storage summary">
-          <div><strong>2 images</strong><span>maximum per app</span></div>
+          <div><strong>2 images</strong><span>per app by default</span></div>
           <div><strong>12 hours</strong><span>rollback retention</span></div>
           <div><strong>4 GiB</strong><span>default free-space floor</span></div>
         </div>
@@ -125,10 +125,10 @@
       <div class="how-copy">
         <p class="eyebrow">How it works</p>
         <h2 id="how-title">A deploy, from start to finish.</h2>
-        <p>You work on your app, and when you're ready, you commit. That's it. <code>bun ship</code> takes it from there.</p>
-        <p>The first run sets itself up. It asks for <code>user@server-ip</code> (have your public key on the server, and sudo rights to reload Caddy), suggests where the app should live, registers the domain and branch, and writes any deploy files your repo is missing.</p>
-        <p>From then on, <code>bun ship</code> runs your tests, builds the container on your own machine, and sends it over. The server checks the image against the commit you pushed, plus config and health, before it replaces the running container. A static site image is about 3 MB, so the whole thing takes seconds.</p>
-        <p>Anything wrong? <code>bun ship --rollback</code>. The previous image sticks around for 12 hours.</p>
+        <p>Commit the app you tested locally, then run <code>bun ship</code> from its root. Your computer needs Bun, Git, SSH, and working Docker CLI, Compose and Buildx tools.</p>
+        <p>First, install shibumi-server on your Linux server and point the app's domain at it. Project setup asks for the SSH target and domain, checks the Compose service and health path, and shows a plan for confirmation. Review and commit any generated deployment files; non-interactive setup can pause there without deploying.</p>
+        <p>On later runs, <code>bun ship</code> runs your configured checks, builds the image locally and uploads it over SSH. The server verifies the image against the pushed commit and validates Compose before replacement. It checks health after starting the new container.</p>
+        <p>To restore the retained previous image, run <code>bun ship --rollback</code>. The default rollback window is 12 hours. It does not restore an earlier database or undo migrations.</p>
       </div>
       <div class="terminal terminal-loop" data-setup-cli aria-label="First ship sets itself up, then every ship is one command">
         <div class="terminal-tabs" role="tablist" aria-label="First run or every ship after">
@@ -168,10 +168,10 @@
       <details class="providers">
         <summary><span><svg class="panel-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>More technical details</span><small>What happens during replacement, and what lives on disk</small></summary>
         <div class="provider-content guardrail-content">
-          <p><strong>What it assumes.</strong> Your public key is already in <code>~/.ssh/authorized_keys</code> on the server, and your user can sudo. Nothing else is required. Shibumi rides the SSH access you already have and never asks for, stores, or transmits a password or private key. The installer checks for Bun, Git, rootless Podman, Caddy, and systemd, and offers to install whatever is missing.</p>
-          <p><strong>There is no registry.</strong> The image never touches Docker Hub or GHCR. <code>bun ship</code> streams it over the same SSH connection you already trust, tagged with the commit it was built from. The upload happens before the Git push, so the server can compare the two and refuse a mismatch.</p>
-          <p><strong>What runs on the box.</strong> Rootless Podman runs the containers, systemd keeps them alive across reboots, and Caddy terminates TLS and proxies each domain to an app that listens on loopback only. From the internet, the machine exposes Caddy and SSH. That's the whole surface.</p>
-          <p><strong>The cutover, in order.</strong> Fail any step and the deploy stops with the old container still serving.</p>
+          <p><strong>Before setup.</strong> You need a working SSH login, permission to approve server changes through sudo, and server-side read access to the app's repository. Prepare Git, rootless Podman, a Compose frontend, Caddy and systemd on Linux. The bootstrap installs Bun if it is missing; it does not provision a bare VPS. SSH uses your existing authentication, and sudo handles its own password prompt.</p>
+          <p><strong>No app image registry.</strong> <code>bun ship</code> uploads your built image directly over SSH; you do not need to push it to Docker Hub or GHCR. Builds still pull their base images. Upload happens before Git push, and the server checks image identity against the exact pushed commit.</p>
+          <p><strong>What runs on the server.</strong> Rootless Podman runs app containers, systemd runs the deployment service, and Caddy terminates TLS and proxies each domain. Keep app and deployment listeners on loopback; expose Caddy and SSH through your firewall.</p>
+          <p><strong>The cutover, in order.</strong> Preflight, image, Compose and optional test failures stop before replacement. Startup or health failures happen after replacement starts and trigger restoration of the previous image.</p>
           <ol class="cutover-steps">
             <li>Free disk and memory floors: 4 GiB and 512 MiB.</li>
             <li>Image labels checked against the registered repository, branch, and pushed commit.</li>
@@ -179,9 +179,9 @@
             <li>Optional app tests run inside the image.</li>
             <li>The health endpoint has to answer.</li>
           </ol>
-          <p><strong>During the swap.</strong> Caddy retries the loopback upstream for up to 20 seconds while containers trade places. If the new one starts fast, nobody notices. If startup or health fails, the previous image comes back automatically.</p>
+          <p><strong>During replacement.</strong> Caddy retries the loopback upstream for up to 20 seconds. Startup or recovery can take longer, so requests may fail during a deployment. The server attempts to restore the previous image if startup or health checks fail; this is not a zero-downtime guarantee.</p>
           <p><strong>Rollback mechanics.</strong> Two tags per app: <code>runtime/&lt;app&gt;:current</code> and one rollback that survives service restarts and expires after 12 hours. <code>bun ship --rollback</code> swaps back without fetching or rebuilding anything.</p>
-          <p><strong>What lives where.</strong> Your SSH target sits in <code>~/.config/shibumi/config.json</code>, mode 0600, on your machine. Webhook secrets and filesystem paths stay on the server. The only deploy file in your repo is <code>shibumi-server.json</code>, and everything in it is safe to publish.</p>
+          <p><strong>What lives where.</strong> Your SSH target sits in <code>~/.config/shibumi/config.json</code>, mode 0600, on your computer. Webhook secrets and server checkout paths stay on the server. Registered app settings go in <code>shibumi-server.json</code> alongside your deployment scripts and container files. Review it before publishing, and never add secrets.</p>
           <pre class="json-block"><code>{
   <span class="syntax-key">"version"</span>: <span class="syntax-number">1</span>,
   <span class="syntax-key">"provider"</span>: <span class="syntax-string">"shibumi-server"</span>,
@@ -208,7 +208,7 @@
         <p class="eyebrow">Linux server</p>
         <h2 id="install-title">Install shis*.</h2>
         <p class="shis-note">* shis = shibumi-server.</p>
-        <p>You need <a href="https://bun.sh" target="_blank" rel="noreferrer">Bun</a>, <a href="https://git-scm.com" target="_blank" rel="noreferrer">Git</a>, <a href="https://podman.io" target="_blank" rel="noreferrer">rootless Podman</a>, <a href="https://caddyserver.com" target="_blank" rel="noreferrer">Caddy</a>, and <a href="https://systemd.io" target="_blank" rel="noreferrer">systemd</a>. The installer checks each one and helps with anything missing. Updates keep your settings and secrets.</p>
+        <p>You need <a href="https://bun.sh" target="_blank" rel="noreferrer">Bun</a>, <a href="https://git-scm.com" target="_blank" rel="noreferrer">Git</a>, <a href="https://podman.io" target="_blank" rel="noreferrer">rootless Podman</a>, <a href="https://caddyserver.com" target="_blank" rel="noreferrer">Caddy</a>, and <a href="https://systemd.io" target="_blank" rel="noreferrer">systemd</a>. Prepare these tools before setup; the bootstrap installs Bun if it is missing. Run the command on the server over SSH. Updates preserve your settings and secrets.</p>
       </div>
       <div class="command-block">
         <code><span class="syntax-command">curl</span> <span class="syntax-option">-fsSL</span> https://server.shibumistack.dev/install | <span class="syntax-command">bash</span></code>

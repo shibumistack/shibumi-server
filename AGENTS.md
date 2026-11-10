@@ -54,7 +54,7 @@ shibumistack.dev is the canonical source for shared artifacts; when it publishes
 - Never interpolate payload or config values into a shell command; use argument arrays.
 - Keep the HTTP listener and app ports on loopback behind Caddy. Managed app proxies retain a 20-second `lb_try_duration` during Compose replacement; deployment logs record health readiness against that retry budget.
 - Keep webhook secrets, credentials, real machine config, and deployment state out of Git and npm packages.
-- Preserve the per-app lock: concurrent deployment requests return `409` and are not queued.
+- Preserve the per-app lock: the installed receiver persists one latest-wins pending deployment per app; later verified requests replace the pending commit. Receivers without a queue store return `409` for another commit while busy.
 - Failed preflights, fetches, Compose validation, builds, or optional app tests must not run `compose up`.
 - After a successful health check, retain the active app image and `retainedRollbackImages` earlier successful images (one by default, two successful images total), then prune dangling Podman images. Retention and cleanup are best effort: log failures without failing a healthy deployment. Never broaden cleanup to `--all` or `system prune`.
 - Preserve host resource guards: preflight memory/disk floors, a cancellable build deadline, systemd ceilings, and per-app Compose limits.
